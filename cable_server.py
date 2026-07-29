@@ -1,7 +1,7 @@
 """
 Cable Schedule Conversion Server
 Start:   python cable_server.py
-Open:    http://127.0.0.1:8765/HOP_Checklist_Platform.html
+Open:    http://127.0.0.1:8765/
 """
 
 import sys, os, re, json, io
@@ -150,7 +150,7 @@ class CableServer(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     server = HTTPServer(('127.0.0.1', PORT), CableServer)
-    print(f"Open: http://127.0.0.1:{PORT}/HOP_Checklist_Platform.html")
+    print(f"Open: http://127.0.0.1:{PORT}/")
     print(f"Press Ctrl+C to stop.")
     try:
         server.serve_forever()

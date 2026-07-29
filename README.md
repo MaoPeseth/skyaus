@@ -2,7 +2,7 @@
 
 A client-side checklist generator for HOP (Handover of Plant) site acceptance testing. Designed for telecom field engineers working on IBC/DAS installations.
 
-**Live site:** https://your-username.github.io/your-repo/HOP_Checklist_Platform.html
+**Live site:** https://maopeseth.github.io/skyaus/
 
 ## Features
 
