@@ -772,14 +772,15 @@ document.getElementById('importBtn').onclick = ()=>{
 };
 
 document.getElementById('refreshBtn').onclick = ()=>{
-  // Force reload data from localStorage and refresh all views
   loadAppData();
   renderScopeList();
   renderDesigner();
   updateGeneratorScopeSelect();
-  // If on generator tab, also rebuild the UI if a scope is selected
   const sel = document.getElementById('genScopeSelect');
-  if(sel.value) buildGenUI(sel.value);
+  if(sel.value){
+    buildGenUI(sel.value);
+    restoreSavedState();
+  }
 };
 
 document.getElementById('seedIbcBtn').onclick = ()=>{
@@ -826,6 +827,7 @@ document.getElementById('genScopeSelect').onchange = function(){
   }
   console.log('Selected scope:', scopeId);
   buildGenUI(scopeId);
+  restoreSavedState();
 };
 
 // Build variable configs from template
