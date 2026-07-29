@@ -1862,6 +1862,14 @@ updateGeneratorScopeSelect();
     }
   }catch(e){}
 })();
+// Restore & save site info fields
+['genSiteId','genSiteName','genSiteDate','genSitePE'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  const val = localStorage.getItem('skyause_'+id);
+  if(val) el.value = val;
+  el.oninput = ()=> localStorage.setItem('skyause_'+id, el.value);
+});
 </script>
 </body>
 </html>
