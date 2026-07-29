@@ -208,6 +208,7 @@ body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--bod
         <input type="file" id="genScheduleFile" accept=".xlsx,.xls" style="font-size:13px;padding:7px 8px;border-radius:7px;border:1px solid var(--line);width:100%;">
       </div>
       <button class="btn" id="genParseBtn" type="button">Parse & Fill</button>
+      <button class="btn btn-ghost" id="genClearBtn" type="button">Clear</button>
     </div>
     <div id="genParseStatus" style="font-size:12px;color:var(--ink-soft);margin-top:8px;font-family:var(--mono);min-height:16px;"></div>
   </div>
@@ -261,6 +262,14 @@ let selectedSectionId = null;
 
 // For generator state
 let genUserState = {};
+const GEN_STATE_KEY = 'skyause_genUserState';
+function saveGenUserState(){
+  try{ localStorage.setItem(GEN_STATE_KEY, JSON.stringify(genUserState)); }catch(e){}
+}
+function clearGenUserState(){
+  genUserState = {};
+  try{ localStorage.removeItem(GEN_STATE_KEY); }catch(e){}
+}
 let genCriteriaOverrides = {};
 let genVarConfigs = [];
 
@@ -989,6 +998,7 @@ function renderGenEquipList(cfg, scope){
       list.appendChild(row);
     });
     countEl.textContent = `${genUserState[key].length} added`;
+    saveGenUserState();
     updateGenStats(genCurrentScope);
   }
   body.appendChild(form); body.appendChild(list);
@@ -1049,6 +1059,7 @@ function renderGenConnList(cfg){
       list.appendChild(row);
     });
     countEl.textContent = `${genUserState[key].length} added`;
+    saveGenUserState();
     updateGenStats(genCurrentScope);
   }
   body.appendChild(form); body.appendChild(errEl); body.appendChild(list);
@@ -1097,6 +1108,7 @@ function renderGenMultiType(cfg){
       });
       const total = cfg.subtypes.reduce((a,s2)=>a+genUserState[key][s2.key].length,0);
       countEl.textContent = `${total} added`;
+      saveGenUserState();
       updateGenStats(genCurrentScope);
     }
     form2.querySelector('button').onclick = ()=>{
@@ -1760,6 +1772,7 @@ document.getElementById('genParseBtn').onclick = async ()=>{
       if(newCard) oldEl.replaceWith(newCard);
     });
     updateGenStats(genCurrentScope);
+    saveGenUserState();
     const parts = Object.entries(sum.byPrefix).map(([p,c])=>`${p}: ${c}`);
     status.textContent = `Imported \u2713 \u2014 ${parts.join(', ')} (${sum.total} total).`;
   } catch(err){
@@ -1768,6 +1781,17 @@ document.getElementById('genParseBtn').onclick = async ()=>{
   } finally {
     btn.disabled = false;
   }
+};
+
+// Clear button
+document.getElementById('genClearBtn').onclick = ()=>{
+  const fileInput = document.getElementById('genScheduleFile');
+  const status = document.getElementById('genParseStatus');
+  const scopeId = document.getElementById('genScopeSelect').value;
+  clearGenUserState();
+  fileInput.value = '';
+  status.textContent = 'Cleared.';
+  if(scopeId) buildGenUI(scopeId);
 };
 
 // ============================================================
@@ -1808,6 +1832,36 @@ renderScopeList();
 if(appData.scopes.length) selectedScopeId = appData.scopes[0].id;
 renderDesigner();
 updateGeneratorScopeSelect();
+// Restore saved genUserState from localStorage
+(function restoreGenUserState(){
+  const scopeId = document.getElementById('genScopeSelect').value;
+  if(!scopeId) return;
+  const saved = localStorage.getItem(GEN_STATE_KEY);
+  if(!saved) return;
+  try{
+    const data = JSON.parse(saved);
+    let changed = false;
+    Object.keys(data).forEach(k => {
+      if(genUserState.hasOwnProperty(k)){
+        genUserState[k] = data[k];
+        changed = true;
+      }
+    });
+    if(changed){
+      genVarCfgs.forEach(cfg=>{
+        if(cfg.kind==='reuseConn') return;
+        const el = document.querySelector(`.var-card[data-key="${cfg.key}"]`);
+        if(!el) return;
+        let newCard;
+        if(cfg.kind==='equipList') newCard = renderGenEquipList(cfg, genCurrentScope);
+        else if(cfg.kind==='connList') newCard = renderGenConnList(cfg);
+        else if(cfg.kind==='equipListMultiType') newCard = renderGenMultiType(cfg);
+        if(newCard) el.replaceWith(newCard);
+      });
+      updateGenStats(genCurrentScope);
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
