@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HOP Checklist Platform — Designer & Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="ibc_template_data.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{
+  --ink:#0F2338; --ink-soft:#3A5068; --paper:#EEF1F4; --panel:#FFFFFF; --line:#D2DAE1;
+  --amber:#F2A93B; --amber-deep:#C97F12; --green:#2E7D5B; --red:#C0392B; --blue:#2E5395;
+  --mono:'JetBrains Mono', monospace; --disp:'Space Grotesk', sans-serif; --body:'Inter', sans-serif;
+}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); -webkit-font-smoothing:antialiased; }
+.topbar{
+  background:var(--ink); color:#fff; padding:14px 24px; position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  border-bottom:3px solid var(--amber);
+}
+.topbar h1{ font-family:var(--disp); font-size:17px; font-weight:700; margin:0; }
+.topbar .sub{ color:#9FB3C4; font-size:11px; font-family:var(--mono); }
+.tabs{ display:flex; gap:0; background:var(--ink); padding:0 24px; }
+.tab{ padding:10px 20px; cursor:pointer; color:#9FB3C4; font-size:13px; font-weight:600; border-bottom:3px solid transparent; transition:.15s; font-family:var(--body); background:none; }
+.tab:hover{ color:#fff; }
+.tab.active{ color:var(--amber); border-bottom-color:var(--amber); }
+.wrap{ max-width:1200px; margin:0 auto; padding:24px 20px 130px; }
+
+/* Sidebar layout */
+.layout{ display:flex; gap:20px; align-items:flex-start; }
+.sidebar{ width:280px; flex-shrink:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.sidebar-header{ padding:12px 14px; background:var(--ink); color:#fff; font-family:var(--disp); font-size:13px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+.sidebar-list{ max-height:70vh; overflow-y:auto; }
+.sidebar-item{ padding:10px 14px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:13px; transition:.1s; }
+.sidebar-item:hover{ background:#F7F9FA; }
+.sidebar-item.active{ background:var(--amber); color:var(--ink); font-weight:600; }
+.sidebar-item .del{ color:var(--red); cursor:pointer; font-size:14px; opacity:0; transition:.1s; background:none; border:none; padding:2px 6px; }
+.sidebar-item:hover .del{ opacity:1; }
+.main{ flex:1; min-width:0; }
+
+/* Cards */
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+.card-header{ padding:12px 16px; border-bottom:1px solid var(--line); background:#F7F9FA; font-family:var(--disp); font-size:14px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.card-body{ padding:14px 16px; }
+
+/* Form */
+.frm-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; align-items:flex-end; }
+.frm-row > *{ flex:1; min-width:120px; }
+.frm-row label{ font-size:11px; color:var(--ink-soft); font-weight:600; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:.4px; }
+.frm-row input,.frm-row select,.frm-row textarea{ font-family:var(--body); font-size:13px; padding:7px 9px; border-radius:6px; border:1px solid var(--line); width:100%; }
+.frm-row textarea{ min-height:50px; resize:vertical; }
+.frm-row .btn{ flex:0 0 auto; }
+
+.btn{
+  font-family:var(--body); font-weight:600; font-size:12px; color:var(--amber-deep); background:#FCEED8;
+  border:1px solid #F0CE9A; padding:7px 14px; border-radius:6px; cursor:pointer; white-space:nowrap;
+}
+.btn:hover{ background:#F9E2B8; }
+.btn-primary{ color:#fff; background:var(--blue); border-color:var(--blue); }
+.btn-primary:hover{ background:#1D3D6E; }
+.btn-danger{ color:#fff; background:var(--red); border-color:var(--red); }
+.btn-danger:hover{ background:#A93226; }
+.btn-sm{ padding:4px 10px; font-size:11px; }
+.btn-ghost{ background:none; border-color:var(--line); color:var(--ink-soft); }
+.btn-ghost:hover{ background:#F7F9FA; }
+
+.item-row{ display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:#F7F9FA; border-radius:6px; margin-bottom:5px; font-size:13px; }
+.item-row .del{ color:var(--red); cursor:pointer; background:none; border:none; font-size:14px; padding:0 4px; }
+.item-list{ margin-bottom:8px; }
+.empty{ color:var(--ink-soft); font-size:12px; font-style:italic; padding:8px 0; }
+
+/* Section kind-specific */
+.kind-badge{ display:inline-block; font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:4px; font-weight:600; }
+.kind-fixed{ background:#E8F0FE; color:#1A73E8; }
+.kind-equip{ background:#E6F4EA; color:#1E8E3E; }
+.kind-conn{ background:#FEF7E0; color:#F9AB00; }
+
+/* Generator */
+.site-card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:20px; }
+.site-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.site-grid input{ font-family:var(--body); font-size:13.5px; padding:9px 10px; border-radius:7px; border:1px solid var(--line); width:100%; }
+.site-grid label{ font-size:11px; color:var(--ink-soft); font-weight:600; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:.4px; }
+
+.accordion{ background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+.accordion-header{ padding:14px 18px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; background:linear-gradient(135deg,#0D2240 0%,#1a3a5c 100%); color:#fff; user-select:none; }
+.accordion-header h3{ font-family:var(--disp); font-size:14px; margin:0; font-weight:700; }
+.accordion-header .badge{ font-family:var(--mono); font-size:11px; background:var(--amber); color:var(--ink); padding:2px 8px; border-radius:10px; font-weight:600; }
+.accordion-header .chevron{ font-size:14px; transition:transform .2s; margin-left:10px; }
+.accordion.open .accordion-header .chevron{ transform:rotate(90deg); }
+.accordion-body{ display:none; padding:12px 16px; }
+.accordion.open .accordion-body{ display:block; }
+
+.sec-fixed{ background:#F7F9FA; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
+.sec-fixed-title{ font-family:var(--disp); font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.sec-fixed .criteria-list{ list-style:none; padding:0; margin:0; }
+.sec-fixed .criteria-list li{ font-size:12px; color:var(--ink); padding:3px 0 3px 16px; position:relative; line-height:1.5; }
+.sec-fixed .criteria-list li::before{ content:''; position:absolute; left:0; top:9px; width:6px; height:6px; background:var(--line); border-radius:50%; }
+
+.var-card{ background:var(--panel); border:1px solid var(--line); border-radius:8px; margin-bottom:8px; overflow:hidden; }
+.var-card > .head{ padding:10px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; cursor:pointer; background:#F0F7EE; }
+.var-card > .head h2{ font-family:var(--disp); font-size:13px; margin:0; color:var(--green); }
+.var-card > .head .count{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); }
+.var-card > .body{ padding:12px 14px; display:none; }
+.var-card > .body.open{ display:block; }
+
+.addform{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.addform input{ font-family:var(--body); font-size:13px; padding:8px 10px; border-radius:7px; border:1px solid var(--line); flex:1; min-width:140px; }
+
+.list .item{ display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:6px; background:#F7F9FA; margin-bottom:5px; font-size:13px; }
+.list .item b{ color:var(--ink); font-family:var(--mono); font-weight:600; }
+.list .x{ border:none; background:none; color:var(--red); font-size:14px; cursor:pointer; padding:0 4px; }
+.form-error{ color:var(--red); font-size:12px; margin:-4px 0 8px; font-family:var(--mono); }
+
+.criteria-editor{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+.criteria-editor-label{ font-family:var(--disp); font-size:11px; font-weight:700; color:var(--amber-deep); text-transform:uppercase; letter-spacing:.3px; margin-bottom:6px; }
+.criteria-editor textarea{ width:100%; font-family:var(--body); font-size:12px; padding:8px; border:1px solid var(--line); border-radius:6px; resize:vertical; min-height:60px; line-height:1.5; }
+.criteria-editor .btn-sm{ font-family:var(--body); font-weight:600; font-size:11px; color:var(--amber-deep); background:#FCEED8; border:1px solid #F0CE9A; padding:5px 12px; border-radius:6px; cursor:pointer; margin-top:4px; }
+
+.footer-bar{ position:fixed; bottom:0; left:0; right:0; background:var(--ink); border-top:3px solid var(--amber); padding:14px 28px; display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; z-index:50; }
+.generate-btn{ font-family:var(--disp); font-weight:700; font-size:15px; color:var(--ink); background:var(--amber); border:none; padding:13px 34px; border-radius:8px; cursor:pointer; }
+.generate-btn:hover{ background:#FFB94D; }
+.footer-note{ color:#9FB3C4; font-size:11.5px; font-family:var(--mono); text-align:center; }
+.fixed-note{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin-bottom:20px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+.save-badge{ font-family:var(--mono); font-size:11px; color:var(--green); opacity:0; transition:opacity .25s; }
+.save-badge.show{ opacity:1; }
+.clear-btn{ font-family:var(--body); font-weight:600; font-size:11px; color:var(--ink-soft); background:none; border:1px solid var(--line); padding:5px 10px; border-radius:6px; cursor:pointer; }
+.clear-btn:hover{ color:var(--red); border-color:var(--red); }
+
+.subtype{ margin-bottom:14px; padding-bottom:12px; border-bottom:1px dashed var(--line); }
+.subtype:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.subtype-label{ font-family:var(--disp); font-weight:700; font-size:12.5px; color:var(--amber-deep); margin-bottom:8px; }
+
+.modal-overlay{ position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.4); z-index:100; display:flex; align-items:center; justify-content:center; }
+.modal-box{ background:var(--panel); border-radius:12px; padding:24px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; }
+.modal-box h2{ font-family:var(--disp); font-size:16px; margin:0 0 14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>HOP Checklist Platform</h1>
+    <div class="sub">Template Designer + Checklist Generator — all scopes</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-ghost" id="seedIbcBtn" style="color:#9FB3C4;border-color:#3A5068;" title="Seed the default IBC Site template">Seed IBC</button>
+    <button class="btn btn-ghost" id="importBtn" style="color:#9FB3C4;border-color:#3A5068;" title="Import template JSON">Import</button>
+    <button class="btn btn-ghost" id="exportBtn" style="color:#9FB3C4;border-color:#3A5068;" title="Export current scope template">Export</button>
+    <button class="btn btn-ghost" id="refreshBtn" style="color:#9FB3C4;border-color:#3A5068;" title="Refresh generator scope list">Refresh</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="designer">Design Template</button>
+  <button class="tab" data-tab="generator">Generate Checklist</button>
+</div>
+
+<div class="wrap">
+
+<!-- ========== DESIGNER TAB ========== -->
+<div id="tab-designer" class="tab-content">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>Scopes</span>
+        <button class="btn btn-sm" id="addScopeBtn">+ Add</button>
+      </div>
+      <div class="sidebar-list" id="scopeList"></div>
+    </div>
+    <div class="main" id="designerMain">
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:40px;color:var(--ink-soft);">
+          Select or create a scope to start designing its template.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== GENERATOR TAB ========== -->
+<div id="tab-generator" class="tab-content" style="display:none;max-width:900px;margin:0 auto;">
+  <div class="site-card">
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;">Scope Template</label>
+      <select id="genScopeSelect" style="font-family:var(--body);font-size:13px;padding:8px 10px;border-radius:7px;border:1px solid var(--line);width:100%;"></select>
+    </div>
+    <div class="site-grid">
+      <div><label>Site ID</label><input type="text" id="genSiteId" placeholder="e.g. R09"></div>
+      <div><label>Site Name</label><input type="text" id="genSiteName" placeholder="e.g. Rockingham"></div>
+      <div><label>Date</label><input type="text" id="genSiteDate" placeholder="e.g. 2026-07-16"></div>
+      <div><label>PE</label><input type="text" id="genSitePE" placeholder="e.g. John Doe"></div>
+    </div>
+  </div>
+
+  <div class="fixed-note" id="genNote">
+    Select a scope template above to begin. The checklist structure will load automatically.
+  </div>
+
+  <div class="site-card upload-card">
+    <div style="font-weight:700;font-family:var(--disp);font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Upload Cable Schedule</div>
+    <div style="font-size:12px;color:var(--ink-soft);margin:6px 0 12px;line-height:1.5;">
+      Upload a cable schedule <code>.xlsx</code> to auto-fill connection sections.
+    </div>
+    <div class="addform" style="align-items:flex-end;">
+      <div style="flex:1;min-width:220px;">
+        <input type="file" id="genScheduleFile" accept=".xlsx,.xls" style="font-size:13px;padding:7px 8px;border-radius:7px;border:1px solid var(--line);width:100%;">
+      </div>
+      <button class="btn" id="genParseBtn" type="button">Parse & Fill</button>
+    </div>
+    <div id="genParseStatus" style="font-size:12px;color:var(--ink-soft);margin-top:8px;font-family:var(--mono);min-height:16px;"></div>
+  </div>
+
+  <div id="genSections"></div>
+</div>
+
+</div>
+
+<div class="footer-bar" id="genFooter" style="display:none;">
+  <button class="generate-btn" id="genBtn">Generate & Download</button>
+  <div class="footer-note" id="genRowStat">calculating&hellip;</div>
+</div>
+
+<!-- ========== MODAL ========== -->
+<div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modalContent"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+// scopes: array of {
+//   id: string, name: string, version: string, createdAt: string,
+//   appendices: [{
+//     id: string, name: string, order: number,
+//     sections: [{
+//       id: string, name: string, kind: string, order: number,
+//       // For fixed-single / fixed-multi:
+//       rows: [{cat, sub, item, loc}],
+//       // For equipList:
+//       item_text, location, placeholderName, placeholderId,
+//       // For connList:
+//       connLabel, aLabel, bLabel, items: [string], location,
+//       // For equipListMultiType:
+//       subtypes: [{key, label, items: [string], location, placeholderName, placeholderId}],
+//       // For block:
+//       templates: [{items: [string]}],
+//       // For reuseConn (references another section):
+//       reuses: "appendixId||sectionId", item (single criterion)
+//     }]
+//   }]
+// }
+
+const STORAGE_KEY = 'hopPlatformData_v1';
+let appData = { scopes: [] };
+let selectedScopeId = null;
+let selectedAppendixId = null;
+let selectedSectionId = null;
+
+// For generator state
+let genUserState = {};
+let genCriteriaOverrides = {};
+let genVarConfigs = [];
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function saveAppData(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch(e){ console.warn(e); }
+}
+function loadAppData(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) appData = JSON.parse(raw);
+    if(!appData.scopes) appData.scopes = [];
+  } catch(e){ console.warn(e); }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e; }
+
+function getScope(id){ return appData.scopes.find(s=>s.id===id); }
+function getAppendix(scopeId, apId){ const s=getScope(scopeId); return s?s.appendices.find(a=>a.id===apId):null; }
+function getSection(scopeId, apId, secId){ const a=getAppendix(scopeId, apId); return a?a.sections.find(s=>s.id===secId):null; }
+
+// ============================================================
+// RENDER: SCOPE LIST (sidebar)
+// ============================================================
+function renderScopeList(){
+  const list = document.getElementById('scopeList');
+  list.innerHTML = '';
+  appData.scopes.forEach(s=>{
+    const item = el('div','sidebar-item' + (s.id===selectedScopeId?' active':''));
+    item.innerHTML = `<span>${esc(s.name)}</span><button class="del" data-id="${s.id}">&times;</button>`;
+    item.onclick = (e)=>{ if(e.target.tagName!=='BUTTON') selectScope(s.id); };
+    item.querySelector('.del').onclick = (e)=>{ e.stopPropagation(); deleteScope(s.id); };
+    list.appendChild(item);
+  });
+}
+
+function selectScope(id){
+  selectedScopeId = id;
+  if(id) selectedAppendixId = null; selectedSectionId = null;
+  renderScopeList();
+  renderDesigner();
+  updateGeneratorScopeSelect();
+}
+
+function deleteScope(id){
+  if(!confirm(`Delete scope "${getScope(id).name}"?`)) return;
+  appData.scopes = appData.scopes.filter(s=>s.id!==id);
+  if(selectedScopeId===id) selectedScopeId = appData.scopes.length ? appData.scopes[0].id : null;
+  saveAppData();
+  renderScopeList();
+  renderDesigner();
+  updateGeneratorScopeSelect();
+}
+
+// ============================================================
+// DESIGNER RENDER
+// ============================================================
+function renderDesigner(){
+  const main = document.getElementById('designerMain');
+  const scope = getScope(selectedScopeId);
+  if(!scope){
+    main.innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--ink-soft);">Select or create a scope to start designing its template.</div></div>`;
+    return;
+  }
+
+  const html = [];
+  html.push(`<div class="card"><div class="card-header" style="justify-content:space-between;">
+    <span>${esc(scope.name)} <span style="font-weight:400;font-size:11px;color:var(--ink-soft);">v${esc(scope.version||'1.0')}</span></span>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-sm" onclick="promptAddAppendix()">+ Appendix</button>
+    </div>
+  </div>
+  <div class="card-body" id="appendixList"></div></div>`);
+  main.innerHTML = html.join('');
+
+  renderAppendixList();
+}
+
+function renderAppendixList(){
+  const container = document.getElementById('appendixList');
+  if(!container) return;
+  const scope = getScope(selectedScopeId);
+  if(!scope || !scope.appendices.length){
+    container.innerHTML = `<div class="empty">No appendices yet. Click "+ Appendix" to add one.</div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  scope.appendices.forEach((ap, ai)=>{
+    const card = el('div','card');
+    card.style.marginBottom = '12px';
+    const header = el('div','card-header');
+    header.style.justifyContent = 'space-between';
+    header.innerHTML = `<span>${esc(ap.name)} <span style="font-weight:400;font-size:11px;color:var(--ink-soft);">(${ap.sections.length} sections)</span></span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-ghost" onclick="promptAddSection('${ap.id}')">+ Section</button>
+        <button class="btn btn-sm btn-ghost" onclick="editAppendix('${ap.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteAppendix('${ap.id}')">&times;</button>
+      </div>`;
+    card.appendChild(header);
+
+    const body = el('div','card-body');
+    body.id = 'apBody_'+ap.id;
+
+    if(!ap.sections.length){
+      body.innerHTML = `<div class="empty">No sections. Click "+ Section" to add.</div>`;
+    } else {
+      ap.sections.forEach((sec, si)=>{
+        const secDiv = el('div','item-row');
+        const kindLabel = kindLabelFor(sec.kind);
+        secDiv.innerHTML = `<span><span class="kind-badge kind-${sec.kind === 'fixed-single'||sec.kind==='fixed-multi'?'fixed':sec.kind==='equipList'||sec.kind==='equipListMultiType'?'equip':'conn'}">${kindLabel}</span> ${esc(sec.name)}</span>
+          <div><button class="btn btn-sm btn-ghost" onclick="editSection('${ap.id}','${sec.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSection('${ap.id}','${sec.id}')">&times;</button></div>`;
+        body.appendChild(secDiv);
+      });
+    }
+    card.appendChild(body);
+    container.appendChild(card);
+  });
+}
+
+function kindLabelFor(kind){
+  const map = {
+    'fixed-single':'Fixed', 'fixed-multi':'Fixed', 'block':'Block',
+    'equipList':'Equip', 'connList':'Conn', 'equipListMultiType':'Multi',
+    'reuseConn':'Reuse', 'flat-list-generic':'Flat', 'appendix_direct':'Direct'
+  };
+  return map[kind] || kind;
+}
+
+// ============================================================
+// CRUD: SCOPE
+// ============================================================
+document.getElementById('addScopeBtn').onclick = ()=>{
+  showModal(`
+    <h2>New Scope</h2>
+    <div class="frm-row"><div><label>Scope Name</label><input type="text" id="newScopeName" placeholder="e.g. Macro Indoor Site"></div></div>
+    <div class="frm-row"><div><label>Version</label><input type="text" id="newScopeVer" value="1.0"></div></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="createScope()">Create</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+};
+function createScope(){
+  const nameInput = document.getElementById('newScopeName');
+  if(!nameInput){ alert('Modal input not found. Try refreshing.'); return; }
+  const name = nameInput.value.trim();
+  if(!name){ alert('Please enter a scope name.'); return; }
+  const scope = {
+    id: uid(),
+    name: name,
+    version: document.getElementById('newScopeVer').value.trim() || '1.0',
+    createdAt: new Date().toISOString().slice(0,10),
+    appendices: []
+  };
+  appData.scopes.push(scope);
+  saveAppData();
+  closeModal();
+  selectedScopeId = scope.id;
+  renderScopeList();
+  renderDesigner();
+  updateGeneratorScopeSelect();
+}
+
+// ============================================================
+// CRUD: APPENDIX
+// ============================================================
+function promptAddAppendix(){
+  showModal(`
+    <h2>Add Appendix</h2>
+    <div class="frm-row"><div><label>Appendix Name</label><input type="text" id="newApName" placeholder="e.g. Appendix 1 Checklist DAS_IBC install"></div></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="addAppendix()">Add</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+}
+function addAppendix(){
+  const name = document.getElementById('newApName').value.trim();
+  if(!name) return;
+  const scope = getScope(selectedScopeId);
+  if(!scope) return;
+  scope.appendices.push({
+    id: uid(), name, order: scope.appendices.length + 1, sections: []
+  });
+  saveAppData();
+  closeModal();
+  renderAppendixList();
+}
+
+function editAppendix(apId){
+  const ap = getAppendix(selectedScopeId, apId);
+  if(!ap) return;
+  showModal(`
+    <h2>Edit Appendix</h2>
+    <div class="frm-row"><div><label>Appendix Name</label><input type="text" id="editApName" value="${esc(ap.name)}"></div></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveAppendix('${apId}')">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+}
+function saveAppendix(apId){
+  const ap = getAppendix(selectedScopeId, apId);
+  if(!ap) return;
+  ap.name = document.getElementById('editApName').value.trim() || ap.name;
+  saveAppData();
+  closeModal();
+  renderAppendixList();
+}
+
+function deleteAppendix(apId){
+  if(!confirm('Delete this appendix and all its sections?')) return;
+  const scope = getScope(selectedScopeId);
+  if(!scope) return;
+  scope.appendices = scope.appendices.filter(a=>a.id!==apId);
+  saveAppData();
+  renderAppendixList();
+}
+
+// ============================================================
+// CRUD: SECTION
+// ============================================================
+function promptAddSection(apId){
+  showModal(`
+    <h2>Add Section</h2>
+    <div class="frm-row">
+      <div><label>Section Name</label><input type="text" id="newSecName" placeholder="e.g. 1.1. Test Information"></div>
+    </div>
+    <div class="frm-row">
+      <div><label>Kind</label>
+        <select id="newSecKind">
+          <option value="fixed-single">Fixed (single-row criteria)</option>
+          <option value="fixed-multi">Fixed (multi-row criteria)</option>
+          <option value="equipList">Equipment List (name + ID)</option>
+          <option value="connList">Connection List (cable + endpoints)</option>
+          <option value="equipListMultiType">Multi-Type Equipment</option>
+          <option value="reuseConn">Re-use Connection</option>
+          <option value="block">Block Template</option>
+          <option value="flat-list-generic">Flat Generic</option>
+          <option value="appendix_direct">Direct Rows</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="addSection('${apId}')">Add</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+}
+function addSection(apId){
+  const name = document.getElementById('newSecName').value.trim();
+  const kind = document.getElementById('newSecKind').value;
+  if(!name) return;
+  const ap = getAppendix(selectedScopeId, apId);
+  if(!ap) return;
+  const sec = { id: uid(), name, kind, order: ap.sections.length + 1 };
+  // Initialize default fields based on kind
+  if(kind==='fixed-single' || kind==='fixed-multi' || kind==='appendix_direct'){
+    sec.rows = [{cat:'', sub:'', item:'', loc:''}];
+  } else if(kind==='equipList'){
+    sec.item_text = 'Close up view and SN';
+    sec.location = 'Internal';
+    sec.placeholderName = 'Equipment 01';
+    sec.placeholderId = 'EQ01';
+    sec.cablePrefixes = [];
+  } else if(kind==='connList'){
+    sec.connLabel = 'CBL-0001';
+    sec.aLabel = 'Device A';
+    sec.bLabel = 'Device B';
+    sec.items = ['1. Photo at {A}', '2. Photo at {B}'];
+    sec.location = 'Internal';
+    sec.cablePrefixes = [];
+  } else if(kind==='equipListMultiType'){
+    sec.subtypes = [{key:'type1', label:'Type 1', items:['Item 1'], location:'Internal', placeholderName:'Item 01', placeholderId:'IT01'}];
+  } else if(kind==='reuseConn'){
+    sec.reuses = '';
+    sec.item = 'Reused criterion';
+    sec.location = 'Internal';
+  } else if(kind==='block'){
+    sec.templates = [{items:['Item 1']}];
+  } else if(kind==='flat-list-generic'){
+    sec.item_text = 'Generic item';
+    sec.location = 'Internal';
+  }
+  ap.sections.push(sec);
+  saveAppData();
+  closeModal();
+  renderAppendixList();
+}
+
+function editSection(apId, secId){
+  const sec = getSection(selectedScopeId, apId, secId);
+  if(!sec) return;
+  const baseKind = sec.kind;
+  let fields = `<div class="frm-row"><div><label>Section Name</label><input type="text" id="editSecName" value="${esc(sec.name)}"></div>
+    <div style="flex:0 0 auto;"><label>Kind</label><select id="editSecKind" onchange="toggleEditSecKindFields()">
+      <option value="fixed-single">Fixed (single-row criteria)</option>
+      <option value="fixed-multi">Fixed (multi-row criteria)</option>
+      <option value="equipList">Equipment List (name + ID)</option>
+      <option value="connList">Connection List (cable + endpoints)</option>
+      <option value="equipListMultiType">Multi-Type Equipment</option>
+      <option value="reuseConn">Re-use Connection</option>
+      <option value="block">Block Template</option>
+      <option value="flat-list-generic">Flat Generic</option>
+      <option value="appendix_direct">Direct Rows</option>
+    </select></div></div>`;
+
+  // ALL kind-specific fields — shown/hidden by JS toggle
+  fields += `<div id="sekFixed" class="skind">
+    <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px;">Rows (JSON array of {cat,sub,item,loc})</label>
+    <textarea id="editSecRows" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid var(--line);border-radius:6px;min-height:100px;">${esc(JSON.stringify((sec.kind==='fixed-single'||sec.kind==='fixed-multi'||sec.kind==='appendix_direct')?sec.rows||[]:[{cat:'',sub:'',item:'',loc:''}],null,2))}</textarea></div>
+  <div id="sekEquip" class="skind">
+    <div class="frm-row"><div><label>Item Text</label><input type="text" id="editSecItemText" value="${esc(sec.item_text||'')}"></div>
+    <div><label>Location</label><input type="text" id="editSecLocation" value="${esc(sec.location||'')}"></div></div>
+    <div class="frm-row"><div><label>Placeholder Name</label><input type="text" id="editSecPhName" value="${esc(sec.placeholderName||'')}"></div>
+    <div><label>Placeholder ID</label><input type="text" id="editSecPhId" value="${esc(sec.placeholderId||'')}"></div></div>
+    <div class="frm-row"><div><label>Cable Prefixes (comma-sep, e.g. FO)</label><input type="text" id="editSecEquipPrefixes" value="${esc((sec.cablePrefixes||[]).join(', '))}"></div></div>
+  </div>
+  <div id="sekConn" class="skind">
+    <div class="frm-row"><div><label>Cable Label Example</label><input type="text" id="editSecConnLabel" value="${esc(sec.connLabel||'')}"></div>
+    <div><label>Endpoint A Example</label><input type="text" id="editSecALabel" value="${esc(sec.aLabel||'')}"></div></div>
+    <div class="frm-row"><div><label>Endpoint B Example</label><input type="text" id="editSecBLabel" value="${esc(sec.bLabel||'')}"></div>
+    <div><label>Location</label><input type="text" id="editSecConnLoc" value="${esc(sec.location||'')}"></div></div>
+    <div class="frm-row"><div><label>Cable Prefixes (comma-sep, e.g. CO, PWR)</label><input type="text" id="editSecConnPrefixes" value="${esc((sec.cablePrefixes||[]).join(', '))}"></div></div>
+    <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px;">Criteria (one per line, use {A} {B} for endpoints)</label>
+    <textarea id="editSecConnItems" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid var(--line);border-radius:6px;min-height:80px;">${esc((sec.items||['1. Photo at {A}','2. Photo at {B}']).join('\n'))}</textarea>
+  </div>
+  <div id="sekMulti" class="skind">
+    <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px;">Subtypes (JSON array of {key,label,items[],location,placeholderName,placeholderId})</label>
+    <textarea id="editSecSubtypes" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid var(--line);border-radius:6px;min-height:120px;">${esc(JSON.stringify((sec.kind==='equipListMultiType'?sec.subtypes||[]:[{key:'type1',label:'Type 1',items:['Item 1'],location:'Internal',placeholderName:'Item 01',placeholderId:'IT01'}]),null,2))}</textarea>
+  </div>
+  <div id="sekReuse" class="skind">
+    <div class="frm-row"><div><label>Reuses (appendixId||sectionId)</label><input type="text" id="editSecReuses" value="${esc(sec.reuses||'')}"></div></div>
+    <div class="frm-row"><div><label>Item Text</label><input type="text" id="editSecReuseItem" value="${esc(sec.item||'')}"></div>
+    <div><label>Location</label><input type="text" id="editSecReuseLoc" value="${esc(sec.location||'')}"></div></div>
+  </div>
+  <div id="sekBlock" class="skind">
+    <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px;">Template Items (one per line)</label>
+    <textarea id="editSecBlockItems" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid var(--line);border-radius:6px;min-height:80px;">${esc((sec.templates&&sec.templates[0]?sec.templates[0].items:['Item 1']).join('\n'))}</textarea>
+  </div>
+  <div id="sekFlat" class="skind">
+    <div class="frm-row"><div><label>Item Text</label><input type="text" id="editSecFlatText" value="${esc(sec.item_text||'')}"></div>
+    <div><label>Location</label><input type="text" id="editSecFlatLoc" value="${esc(sec.location||'')}"></div></div>
+  </div>`;
+
+  showModal(`
+    <h2>Edit Section</h2>
+    ${fields}
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveSection('${apId}','${secId}')">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+  // Set the dropdown to the actual kind and toggle visibility
+  document.getElementById('editSecKind').value = baseKind;
+  toggleEditSecKindFields();
+}
+function toggleEditSecKindFields(){
+  const kind = document.getElementById('editSecKind').value;
+  const map = {'fixed-single':'sekFixed','fixed-multi':'sekFixed','appendix_direct':'sekFixed',
+    'equipList':'sekEquip','connList':'sekConn','equipListMultiType':'sekMulti',
+    'reuseConn':'sekReuse','block':'sekBlock','flat-list-generic':'sekFlat'};
+  const target = map[kind] || 'sekFixed';
+  document.querySelectorAll('.skind').forEach(d=>d.style.display='none');
+  const el = document.getElementById(target);
+  if(el) el.style.display = '';
+}
+
+function saveSection(apId, secId){
+  const sec = getSection(selectedScopeId, apId, secId);
+  if(!sec) return;
+  sec.name = document.getElementById('editSecName').value.trim() || sec.name;
+
+  const kind = document.getElementById('editSecKind').value;
+  sec.kind = kind;
+
+  try {
+    if(kind==='fixed-single'||kind==='fixed-multi'||kind==='appendix_direct'){
+      sec.rows = JSON.parse(document.getElementById('editSecRows').value);
+      delete sec.item_text; delete sec.items; delete sec.subtypes; delete sec.templates;
+      delete sec.reuses; delete sec.item; delete sec.cablePrefixes;
+    } else if(kind==='equipList'){
+      sec.item_text = document.getElementById('editSecItemText').value;
+      sec.location = document.getElementById('editSecLocation').value;
+      sec.placeholderName = document.getElementById('editSecPhName').value;
+      sec.placeholderId = document.getElementById('editSecPhId').value;
+      sec.cablePrefixes = document.getElementById('editSecEquipPrefixes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      delete sec.rows; delete sec.items; delete sec.subtypes; delete sec.templates;
+    } else if(kind==='connList'){
+      sec.connLabel = document.getElementById('editSecConnLabel').value;
+      sec.aLabel = document.getElementById('editSecALabel').value;
+      sec.bLabel = document.getElementById('editSecBLabel').value;
+      sec.location = document.getElementById('editSecConnLoc').value;
+      sec.items = document.getElementById('editSecConnItems').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      sec.cablePrefixes = document.getElementById('editSecConnPrefixes').value.split(',').map(s=>s.trim()).filter(Boolean);
+      delete sec.rows; delete sec.subtypes; delete sec.templates;
+    } else if(kind==='equipListMultiType'){
+      sec.subtypes = JSON.parse(document.getElementById('editSecSubtypes').value);
+      delete sec.rows; delete sec.items; delete sec.templates; delete sec.cablePrefixes;
+    } else if(kind==='reuseConn'){
+      sec.reuses = document.getElementById('editSecReuses').value;
+      sec.item = document.getElementById('editSecReuseItem').value;
+      sec.location = document.getElementById('editSecReuseLoc').value;
+      delete sec.rows; delete sec.items; delete sec.subtypes; delete sec.templates; delete sec.cablePrefixes;
+    } else if(kind==='block'){
+      const items = document.getElementById('editSecBlockItems').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      sec.templates = [{items}];
+      delete sec.rows; delete sec.items; delete sec.subtypes; delete sec.cablePrefixes;
+    } else if(kind==='flat-list-generic'){
+      sec.item_text = document.getElementById('editSecFlatText').value;
+      sec.location = document.getElementById('editSecFlatLoc').value;
+      delete sec.rows; delete sec.items; delete sec.subtypes; delete sec.templates; delete sec.cablePrefixes;
+    }
+  } catch(e){ alert('Error saving: ' + e.message); return; }
+
+  saveAppData();
+  closeModal();
+  renderAppendixList();
+}
+
+function deleteSection(apId, secId){
+  if(!confirm('Delete this section?')) return;
+  const ap = getAppendix(selectedScopeId, apId);
+  if(!ap) return;
+  ap.sections = ap.sections.filter(s=>s.id!==secId);
+  saveAppData();
+  renderAppendixList();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function showModal(html){
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+function closeModal(){
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+// Override: also close modal on escape key
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+document.getElementById('exportBtn').onclick = ()=>{
+  const scope = getScope(selectedScopeId);
+  if(!scope){ alert('Select a scope first.'); return; }
+  const blob = new Blob([JSON.stringify(scope, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${scope.name.replace(/[^a-zA-Z0-9]/g,'_')}_template.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById('importBtn').onclick = ()=>{
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      // Validate minimal structure
+      if(!data.name || !data.appendices){
+        alert('Invalid template file. Must have "name" and "appendices".');
+        return;
+      }
+      // Ensure it has an id
+      if(!data.id) data.id = uid();
+      // Check for duplicate names
+      if(appData.scopes.some(s=>s.name===data.name)){
+        if(!confirm(`Scope "${data.name}" already exists. Import anyway?`)) return;
+      }
+      appData.scopes.push(data);
+      saveAppData();
+      selectedScopeId = data.id;
+      renderScopeList();
+      renderDesigner();
+      updateGeneratorScopeSelect();
+      alert(`Imported "${data.name}" (${data.appendices.length} appendices).`);
+    } catch(err){
+      alert('Import error: ' + err.message);
+    }
+  };
+  input.click();
+};
+
+document.getElementById('refreshBtn').onclick = ()=>{
+  // Force reload data from localStorage and refresh all views
+  loadAppData();
+  renderScopeList();
+  renderDesigner();
+  updateGeneratorScopeSelect();
+  // If on generator tab, also rebuild the UI if a scope is selected
+  const sel = document.getElementById('genScopeSelect');
+  if(sel.value) buildGenUI(sel.value);
+};
+
+document.getElementById('seedIbcBtn').onclick = ()=>{
+  if(typeof IBC_SEED_TEMPLATE === 'undefined'){
+    alert('IBC seed data not loaded (missing ibc_template_data.js).');
+    return;
+  }
+  const name = IBC_SEED_TEMPLATE.name;
+  if(appData.scopes.some(s=>s.name===name)){
+    if(!confirm(`"${name}" already exists. Duplicate anyway?`)) return;
+  }
+  // Clone and assign new id
+  const clone = JSON.parse(JSON.stringify(IBC_SEED_TEMPLATE));
+  clone.id = uid();
+  appData.scopes.push(clone);
+  saveAppData();
+  selectedScopeId = clone.id;
+  renderScopeList();
+  renderDesigner();
+  updateGeneratorScopeSelect();
+  alert(`Seeded "${name}" (${clone.appendices.length} appendices).`);
+};
+
+// ============================================================
+// GENERATOR
+// ============================================================
+function updateGeneratorScopeSelect(){
+  const sel = document.getElementById('genScopeSelect');
+  if(!sel){ console.warn('genScopeSelect element not found'); return; }
+  sel.innerHTML = '<option value="">-- Select a scope template --</option>';
+  console.log('updateGeneratorScopeSelect: scopes=', appData.scopes.map(s=>s.name));
+  appData.scopes.forEach(s=>{
+    sel.innerHTML += `<option value="${s.id}">${esc(s.name)}</option>`;
+  });
+}
+
+document.getElementById('genScopeSelect').onchange = function(){
+  const scopeId = this.value;
+  if(!scopeId){
+    document.getElementById('genSections').innerHTML = '';
+    document.getElementById('genFooter').style.display = 'none';
+    document.getElementById('genNote').textContent = 'Select a scope template above to begin.';
+    return;
+  }
+  console.log('Selected scope:', scopeId);
+  buildGenUI(scopeId);
+};
+
+// Build variable configs from template
+function buildVarConfigsFromScope(scope){
+  const configs = [];
+  scope.appendices.forEach(ap=>{
+    ap.sections.forEach(sec=>{
+      const key = varKeyGen(ap.id, sec.id);
+      if(sec.kind==='equipList'){
+        configs.push({ appendix:ap.id, section:sec.id, key, kind:'equipList',
+          ui:sec.name, placeholderName:sec.placeholderName||'Equipment', placeholderId:sec.placeholderId||'EQ' });
+      } else if(sec.kind==='connList'){
+        configs.push({ appendix:ap.id, section:sec.id, key, kind:'connList',
+          ui:sec.name, connLabel:sec.connLabel||'CBL', aLabel:sec.aLabel||'A', bLabel:sec.bLabel||'B',
+          items: (sec.items||[]).map(t=>{
+            return (a,b)=>t.replace(/\{A\}/g,a).replace(/\{B\}/g,b);
+          }), location:sec.location||'Internal' });
+      } else if(sec.kind==='equipListMultiType'){
+        configs.push({ appendix:ap.id, section:sec.id, key, kind:'equipListMultiType',
+          ui:sec.name, subtypes:(sec.subtypes||[]).map(st=>({
+            key:st.key, label:st.label, placeholderName:st.placeholderName, placeholderId:st.placeholderId,
+            items:st.items, location:st.location||'Internal' })) });
+      } else if(sec.kind==='reuseConn'){
+        // Find the referenced section
+        const [refApId, refSecId] = (sec.reuses||'').split('||');
+        configs.push({ appendix:ap.id, section:sec.id, key, kind:'reuseConn',
+          reuses:varKeyGen(refApId, refSecId), item:sec.item, location:sec.location||'Internal' });
+      }
+    });
+  });
+  return configs;
+}
+
+function varKeyGen(apId, secId){ return `${apId}||${secId}`; }
+
+let genCurrentScope = null;
+let genVarCfgs = [];
+
+function buildGenUI(scopeId){
+  const scope = getScope(scopeId);
+  if(!scope){ console.warn('buildGenUI: scope not found for id', scopeId); return; }
+  console.log('buildGenUI: building for scope', scope.name, 'appendices:', scope.appendices.length);
+  genCurrentScope = scope;
+  genVarCfgs = buildVarConfigsFromScope(scope);
+  genUserState = {};
+  genCriteriaOverrides = {};
+
+  // Init user state
+  genVarCfgs.forEach(cfg=>{
+    if(cfg.kind==='reuseConn') return;
+    const key = cfg.key;
+    if(cfg.kind==='equipListMultiType'){
+      const obj = {};
+      cfg.subtypes.forEach(st=>{ obj[st.key] = []; });
+      genUserState[key] = obj;
+    } else {
+      genUserState[key] = [];
+    }
+  });
+
+  // Init criteria overrides
+  genVarCfgs.forEach(cfg=>{
+    if(cfg.kind==='equipList'||cfg.kind==='connList'||cfg.kind==='equipListMultiType'){
+      const critKey = cfg.key + '||criteria';
+      if(genCriteriaOverrides[critKey]===undefined){
+        if(cfg.kind==='equipList'){
+          const sec = findDocSectionGen(scope, cfg.appendix, cfg.section);
+          genCriteriaOverrides[critKey] = sec && sec.item_text ? [sec.item_text] : ['Close up view and SN'];
+        } else if(cfg.kind==='connList'){
+          genCriteriaOverrides[critKey] = (cfg.items||[]).map(fn=>fn('END_A','END_B'));
+        } else if(cfg.kind==='equipListMultiType'){
+          const map = {};
+          cfg.subtypes.forEach(st=>{ map[st.key] = st.items.slice(); });
+          genCriteriaOverrides[critKey] = map;
+        }
+      }
+    }
+  });
+
+  // Build UI
+  const root = document.getElementById('genSections');
+  root.innerHTML = '';
+  const note = document.getElementById('genNote');
+  const fixedCount = countFixedSections(scope);
+  const varCount = genVarCfgs.filter(c=>c.kind!=='reuseConn').length;
+  note.innerHTML = `<b>${fixedCount} fixed sections</b> (copied automatically) and <b>${varCount} variable sections</b> (fill in equipment below).`;
+
+  scope.appendices.forEach(ap=>{
+    const acc = el('div','accordion');
+    const header = el('div','accordion-header');
+    const secs = ap.sections;
+    const vc = genVarCfgs.filter(v=>v.appendix===ap.id && v.kind!=='reuseConn').length;
+    header.innerHTML = `<h3>${esc(ap.name)}</h3><div><span class="badge">${secs.length} sections</span>${vc?`<span class="badge" style="background:var(--green);color:#fff;margin-left:6px;">${vc} editable</span>`:''}<span class="chevron">\u25B6</span></div>`;
+    header.onclick = ()=> acc.classList.toggle('open');
+    acc.appendChild(header);
+    const body = el('div','accordion-body');
+    secs.forEach(sec=>{
+      const cfg = genVarCfgs.find(v=>v.appendix===ap.id && v.section===sec.id);
+      if(cfg && cfg.kind!=='reuseConn'){
+        let card;
+        if(cfg.kind==='equipList') card = renderGenEquipList(cfg, scope);
+        else if(cfg.kind==='connList') card = renderGenConnList(cfg);
+        else if(cfg.kind==='equipListMultiType') card = renderGenMultiType(cfg);
+        if(card) body.appendChild(card);
+      } else if(cfg && cfg.kind==='reuseConn'){
+        const note2 = el('div','sec-fixed');
+        const srcCfg = genVarCfgs.find(v=>v.key===cfg.reuses);
+        note2.innerHTML = `<div class="sec-fixed-title">${esc(sec.name)}</div><p style="font-size:12px;color:var(--ink-soft);margin:4px 0 0;">Auto-generates from the data in "${srcCfg?esc(srcCfg.ui):'referenced section'}" above.</p>`;
+        body.appendChild(note2);
+      } else {
+        body.appendChild(renderGenFixed(sec));
+      }
+    });
+    acc.appendChild(body);
+    root.appendChild(acc);
+  });
+
+  document.getElementById('genFooter').style.display = 'flex';
+  updateGenStats(scope);
+}
+
+function countFixedSections(scope){
+  let count = 0;
+  scope.appendices.forEach(ap=>{
+    ap.sections.forEach(sec=>{
+      if(!genVarCfgs.find(v=>v.appendix===ap.id && v.section===sec.id)){
+        count++;
+      }
+    });
+  });
+  return count;
+}
+
+function findDocSectionGen(scope, apId, secId){
+  const ap = scope.appendices.find(a=>a.id===apId);
+  if(!ap) return null;
+  return ap.sections.find(s=>s.id===secId);
+}
+
+// ============================================================
+// GENERATOR UI RENDERERS (Equipment List, Conn List, Multi-Type, Fixed)
+// ============================================================
+function renderGenEquipList(cfg, scope){
+  const key = cfg.key;
+  const nameId = uid(), idId = uid();
+  const card = el('div','var-card');
+  card.dataset.key = key;
+  const head = el('div','head');
+  head.innerHTML = `<h2>\u2714 ${esc(cfg.ui)}</h2><span class="count">0 added</span>`;
+  const countEl = head.querySelector('.count');
+  const body = el('div','body open');
+  head.onclick = ()=> body.classList.toggle('open');
+  const form = el('div','addform');
+  form.innerHTML = `<input type="text" placeholder="Name (e.g. ${esc(cfg.placeholderName)})" id="${nameId}"><input type="text" placeholder="ID (e.g. ${esc(cfg.placeholderId)})" id="${idId}"><button class="btn" type="button">Add</button>`;
+  const list = el('div','list');
+  const nameEl = form.querySelector(`#${nameId}`);
+  const idEl = form.querySelector(`#${idId}`);
+  form.querySelector('button').onclick = ()=>{
+    if(!nameEl.value.trim()) return;
+    genUserState[key].push({name:nameEl.value.trim(), id:idEl.value.trim()});
+    nameEl.value=''; idEl.value=''; nameEl.focus();
+    renderList();
+  };
+  function renderList(){
+    list.innerHTML = '';
+    genUserState[key].forEach((inst,i)=>{
+      const row = el('div','item');
+      row.innerHTML = `<span>${esc(inst.name)} <b>${esc(inst.id)}</b></span><button class="x" type="button">\u2715</button>`;
+      row.querySelector('.x').onclick = ()=>{ genUserState[key].splice(i,1); renderList(); };
+      list.appendChild(row);
+    });
+    countEl.textContent = `${genUserState[key].length} added`;
+    updateGenStats(genCurrentScope);
+  }
+  body.appendChild(form); body.appendChild(list);
+  // Criteria editor
+  const sec = findDocSectionGen(scope, cfg.appendix, cfg.section);
+  const critKey = key + '||criteria';
+  const defaultCriteria = sec && sec.item_text ? [sec.item_text] : ['Close up view and SN'];
+  if(genCriteriaOverrides[critKey]===undefined) genCriteriaOverrides[critKey] = defaultCriteria.slice();
+  const critDiv = el('div','criteria-editor');
+  critDiv.innerHTML = `<div class="criteria-editor-label">Checklist Criteria (editable)</div><textarea id="${uid()}">${genCriteriaOverrides[critKey].join('\n')}</textarea><button class="btn-sm" type="button">Save Criteria</button>`;
+  const ta = critDiv.querySelector('textarea');
+  critDiv.querySelector('.btn-sm').onclick = ()=>{
+    genCriteriaOverrides[critKey] = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    updateGenStats(genCurrentScope);
+  };
+  body.appendChild(critDiv);
+  card.appendChild(head); card.appendChild(body);
+  renderList();
+  return card;
+}
+
+function renderGenConnList(cfg){
+  const key = cfg.key;
+  const connId = uid(), labelId = uid();
+  const card = el('div','var-card');
+  card.dataset.key = key;
+  const head = el('div','head');
+  head.innerHTML = `<h2>\u2714 ${esc(cfg.ui)}</h2><span class="count">0 added</span>`;
+  const countEl = head.querySelector('.count');
+  const body = el('div','body open');
+  head.onclick = ()=> body.classList.toggle('open');
+  const exampleLabel = `${cfg.aLabel} - ${cfg.bLabel}`;
+  const form = el('div','addform');
+  form.innerHTML = `<input type="text" placeholder="Cable ID (e.g. ${esc(cfg.connLabel)})" id="${connId}"><input type="text" placeholder="Cable Label (e.g. ${esc(exampleLabel)})" id="${labelId}" style="flex:2"><button class="btn" type="button">Add</button>`;
+  const errEl = el('div','form-error','');
+  const list = el('div','list');
+  const connEl = form.querySelector(`#${connId}`);
+  const labelEl = form.querySelector(`#${labelId}`);
+  function addFromForm(){
+    errEl.textContent = '';
+    const idVal = connEl.value.trim();
+    const labelVal = labelEl.value.trim();
+    if(!idVal || !labelVal) return;
+    const m = labelVal.match(/^(.*?) - (.*)$/);
+    if(!m){ errEl.textContent = 'Need " - " separating the two ends.'; return; }
+    genUserState[key].push({connId:idVal, a:m[1].trim(), b:m[2].trim()});
+    connEl.value=''; labelEl.value=''; connEl.focus();
+    renderList();
+  }
+  form.querySelector('button').onclick = addFromForm;
+  labelEl.addEventListener('keydown', e=>{ if(e.key==='Enter') addFromForm(); });
+  function renderList(){
+    list.innerHTML = '';
+    genUserState[key].forEach((c,i)=>{
+      const row = el('div','item');
+      row.innerHTML = `<span>${esc(c.connId)}: <b>${esc(c.a)}</b> \u2194 <b>${esc(c.b)}</b></span><button class="x" type="button">\u2715</button>`;
+      row.querySelector('.x').onclick = ()=>{ genUserState[key].splice(i,1); renderList(); };
+      list.appendChild(row);
+    });
+    countEl.textContent = `${genUserState[key].length} added`;
+    updateGenStats(genCurrentScope);
+  }
+  body.appendChild(form); body.appendChild(errEl); body.appendChild(list);
+  // Criteria
+  const critKey = key + '||criteria';
+  const defaultCriteria = (cfg.items||[]).map(fn=>fn('END_A','END_B'));
+  if(genCriteriaOverrides[critKey]===undefined) genCriteriaOverrides[critKey] = defaultCriteria.slice();
+  const critDiv = el('div','criteria-editor');
+  critDiv.innerHTML = `<div class="criteria-editor-label">Criteria (editable, use {A} {B})</div><textarea id="${uid()}">${genCriteriaOverrides[critKey].join('\n')}</textarea><button class="btn-sm" type="button">Save Criteria</button>`;
+  const ta = critDiv.querySelector('textarea');
+  critDiv.querySelector('.btn-sm').onclick = ()=>{
+    genCriteriaOverrides[critKey] = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    updateGenStats(genCurrentScope);
+  };
+  body.appendChild(critDiv);
+  card.appendChild(head); card.appendChild(body);
+  renderList();
+  return card;
+}
+
+function renderGenMultiType(cfg){
+  const key = cfg.key;
+  const card = el('div','var-card');
+  card.dataset.key = key;
+  const head = el('div','head');
+  head.innerHTML = `<h2>\u2714 ${esc(cfg.ui)}</h2><span class="count">0 added</span>`;
+  const countEl = head.querySelector('.count');
+  const body = el('div','body open');
+  head.onclick = ()=> body.classList.toggle('open');
+  cfg.subtypes.forEach(st=>{
+    const nameId = uid(), idId = uid();
+    const sub = el('div','subtype');
+    sub.innerHTML = `<div class="subtype-label">${esc(st.label)}</div>`;
+    const form2 = el('div','addform');
+    form2.innerHTML = `<input type="text" placeholder="Name (e.g. ${esc(st.placeholderName)})" id="${nameId}"><input type="text" placeholder="ID (e.g. ${esc(st.placeholderId)})" id="${idId}"><button class="btn" type="button">Add</button>`;
+    const list2 = el('div','list');
+    const nameEl = form2.querySelector(`#${nameId}`);
+    const idEl = form2.querySelector(`#${idId}`);
+    function renderList(){
+      list2.innerHTML = '';
+      genUserState[key][st.key].forEach((inst,i)=>{
+        const row = el('div','item');
+        row.innerHTML = `<span>${esc(inst.name)} <b>${esc(inst.id)}</b></span><button class="x" type="button">\u2715</button>`;
+        row.querySelector('.x').onclick = ()=>{ genUserState[key][st.key].splice(i,1); renderList(); };
+        list2.appendChild(row);
+      });
+      const total = cfg.subtypes.reduce((a,s2)=>a+genUserState[key][s2.key].length,0);
+      countEl.textContent = `${total} added`;
+      updateGenStats(genCurrentScope);
+    }
+    form2.querySelector('button').onclick = ()=>{
+      if(!nameEl.value.trim()) return;
+      genUserState[key][st.key].push({name:nameEl.value.trim(), id:idEl.value.trim()});
+      nameEl.value=''; idEl.value=''; nameEl.focus();
+      renderList();
+    };
+    sub.appendChild(form2); sub.appendChild(list2);
+    body.appendChild(sub);
+  });
+  // Criteria for multiType
+  const critKey = key + '||criteria';
+  const defaultCriteria = {};
+  cfg.subtypes.forEach(st=>{ defaultCriteria[st.key] = st.items.slice(); });
+  if(genCriteriaOverrides[critKey]===undefined) genCriteriaOverrides[critKey] = defaultCriteria;
+  const critDiv = el('div','criteria-editor');
+  let taHtml = '';
+  cfg.subtypes.forEach(st=>{
+    const taId = uid();
+    taHtml += `<div class="criteria-editor-label">${esc(st.label)}</div><textarea id="${taId}" data-subtype="${st.key}">${(genCriteriaOverrides[critKey][st.key]||st.items).join('\n')}</textarea>`;
+  });
+  critDiv.innerHTML = `<div class="criteria-editor-label">Criteria (editable)</div>${taHtml}<button class="btn-sm" type="button">Save Criteria</button>`;
+  critDiv.querySelector('.btn-sm').onclick = ()=>{
+    critDiv.querySelectorAll('textarea').forEach(ta2=>{
+      const sk = ta2.getAttribute('data-subtype');
+      genCriteriaOverrides[critKey][sk] = ta2.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    });
+    updateGenStats(genCurrentScope);
+  };
+  body.appendChild(critDiv);
+  card.appendChild(head); card.appendChild(body);
+  cfg.subtypes.forEach((st,i)=>{
+    const fakeRender = ()=>{ /* first render happens on add */ };
+    if(i===0){
+      // initial render for first subtype
+    }
+  });
+  return card;
+}
+
+function renderGenFixed(sec){
+  const card = el('div','sec-fixed');
+  card.innerHTML = `<div class="sec-fixed-title">${esc(sec.name)}</div>`;
+  if((sec.kind==='fixed-single'||sec.kind==='fixed-multi') && sec.rows){
+    const list = el('ul','criteria-list');
+    sec.rows.forEach(r=>{
+      if(!r.item) return;
+      const li = el('li');
+      li.textContent = r.item;
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  } else if(sec.kind==='block' && sec.templates && sec.templates[0]){
+    const list = el('ul','criteria-list');
+    sec.templates[0].items.forEach(item=>{
+      const li = el('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  } else if(sec.kind==='flat-list-generic'){
+    const p = el('p');
+    p.style.cssText = 'font-size:12px;color:var(--ink-soft);margin:0;';
+    p.textContent = sec.item_text || '(generic)';
+    card.appendChild(p);
+  } else if(sec.kind==='appendix_direct' || (sec.rows && sec.rows.length===0)){
+    const p = el('p');
+    p.style.cssText = 'font-size:12px;color:var(--ink-soft);margin:0;font-style:italic;';
+    p.textContent = 'No checklist items.';
+    card.appendChild(p);
+  }
+  return card;
+}
+
+// ============================================================
+// GENERATOR STATS
+// ============================================================
+function updateGenStats(scope){
+  if(!scope) return;
+  let total = 0;
+  genVarCfgs.forEach(cfg=>{
+    if(cfg.kind==='reuseConn'){
+      const src = genVarCfgs.find(v=>v.key===cfg.reuses);
+      total += (genUserState[src?src.key:'']||[]).length;
+      return;
+    }
+    const key = cfg.key;
+    const critKey = key + '||criteria';
+    if(cfg.kind==='equipList'){
+      const n = (genUserState[key]||[]).length;
+      const items = genCriteriaOverrides[critKey] || ['Item'];
+      total += n * items.length;
+    } else if(cfg.kind==='connList'){
+      const items = genCriteriaOverrides[critKey] || (cfg.items||[]).map(fn=>fn('A','B'));
+      total += (genUserState[key]||[]).length * items.length;
+    } else if(cfg.kind==='equipListMultiType'){
+      cfg.subtypes.forEach(st=>{
+        const items = (genCriteriaOverrides[critKey]&&genCriteriaOverrides[critKey][st.key]) || st.items;
+        total += (genUserState[key][st.key]||[]).length * items.length;
+      });
+    }
+  });
+  let fixedCount = 0;
+  scope.appendices.forEach(ap=>{
+    ap.sections.forEach(sec=>{
+      if(!genVarCfgs.find(v=>v.appendix===ap.id && v.section===sec.id)){
+        if(sec.rows) fixedCount += sec.rows.filter(r=>r.item).length;
+        else if(sec.templates && sec.templates[0]) fixedCount += sec.templates[0].items.length;
+        else fixedCount++;
+      }
+    });
+  });
+  const statEl = document.getElementById('genRowStat');
+  if(statEl) statEl.textContent = `${total + fixedCount} rows (${fixedCount} fixed + ${total} from equipment)`;
+}
+
+// ============================================================
+// CABLE SCHEDULE PARSER (adapted for template-driven)
+// ============================================================
+function connTargetKeysGen(prefix, scope){
+  const keys = [];
+  scope.appendices.forEach(ap=>{
+    ap.sections.forEach(sec=>{
+      if(Array.isArray(sec.cablePrefixes) && sec.cablePrefixes.includes(prefix)){
+        keys.push(varKeyGen(ap.id, sec.id));
+      }
+    });
+  });
+  return keys;
+}
+
+function processCableScheduleRows(rows, scope){
+  const allPrefixes = [];
+  scope.appendices.forEach(ap=>ap.sections.forEach(sec=>{
+    if(Array.isArray(sec.cablePrefixes)){
+      sec.cablePrefixes.forEach(p => { if(!allPrefixes.includes(p)) allPrefixes.push(p); });
+    }
+  }));
+  const arrs = {};
+  const byPrefix = {};
+  allPrefixes.forEach(p => { byPrefix[p] = 0; });
+  scope.appendices.forEach(ap=>ap.sections.forEach(sec=>{
+    if(Array.isArray(sec.cablePrefixes) && sec.cablePrefixes.length){
+      arrs[varKeyGen(ap.id, sec.id)] = [];
+    }
+  }));
+  let seen = 0;
+  rows.forEach(({cableNumber, cableLabel}) => {
+    let connId = String(cableNumber).trim();
+    if(!connId || connId.toLowerCase() === 'cable number') return;
+    if(/^—|^-|spare/i.test(connId)) return;
+    const prefix = connId.split('-')[0].toUpperCase();
+    const keys = connTargetKeysGen(prefix, scope);
+    if(!keys.length) return;
+    let label = String(cableLabel == null ? '' : cableLabel).trim();
+    let a, b;
+    const m = label.match(/^(.*?)\s-\s(.*)$/);
+    if(m){ a = m[1].trim(); b = m[2].trim(); }
+    else { a = label; b = ''; }
+    keys.forEach(k => {
+      const cfg = genVarCfgs.find(v=>v.key===k);
+      if(cfg && cfg.kind==='equipList'){
+        arrs[k].push({name: connId, id: (a && b) ? `${a} - ${b}` : a});
+      } else {
+        arrs[k].push({connId, a, b});
+      }
+    });
+    byPrefix[prefix] = (byPrefix[prefix]||0) + 1;
+    seen++;
+  });
+  Object.keys(arrs).forEach(k => { genUserState[k] = arrs[k]; });
+  return {byPrefix, total: seen};
+}
+
+async function parseCableScheduleGen(file, scope){
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, {type:'array'});
+  const rows = [];
+  wb.SheetNames.forEach(name=>{
+    const sheet = wb.Sheets[name];
+    if(!sheet) return;
+    const matrix = XLSX.utils.sheet_to_json(sheet, {header:1, defval:'', raw:false});
+    const hdrIdx = matrix.findIndex(r => Array.isArray(r) && r.some(v => String(v).trim().toLowerCase() === 'cable number'));
+    if(hdrIdx === -1) return;
+    const header = matrix[hdrIdx];
+    let cnCol = -1, clCol = -1;
+    header.forEach((h, ci) => {
+      const hl = String(h).trim().toLowerCase();
+      if(hl === 'cable number' || hl === 'cable no.' || hl === 'cable no' || hl === 'cable id' || hl === 'cable #') cnCol = ci;
+      if(hl === 'cable label' || hl.startsWith('cable label') || hl.includes('cable label')) clCol = ci;
+    });
+    if(cnCol === -1) return;
+    for(let i = hdrIdx + 1; i < matrix.length; i++){
+      const row = matrix[i];
+      const connId = String(row[cnCol] == null ? '' : row[cnCol]).trim();
+      if(!connId || connId.toLowerCase() === 'cable number') continue;
+      if(/^—|^-|spare/i.test(connId)) continue;
+      const label = clCol >= 0 ? String(row[clCol] == null ? '' : row[clCol]).trim() : '';
+      rows.push({cableNumber: connId, cableLabel: label});
+    }
+  });
+  return processCableScheduleRows(rows, scope);
+}
+
+// ============================================================
+// EXCEL GENERATION ENGINE (adapted from original IBC code)
+// ============================================================
+const S_gen = {
+  navyFill:    {type:'pattern', pattern:'solid', fgColor:{argb:'FF0D2240'}},
+  appendixFill:{type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF00'}},
+  sectionFill: {type:'pattern', pattern:'solid', fgColor:{argb:'FFEAF4FB'}},
+  rowFill:     {type:'pattern', pattern:'solid', fgColor:{argb:'FFFDFEFE'}},
+  thin: {top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}},
+  titleFont:   {name:'Calibri', size:14, bold:true, color:{argb:'FFFFFFFF'}},
+  siteFont:    {name:'Calibri', size:10, bold:false, color:{argb:'FF000000'}},
+  headerFont:  {name:'Calibri', size:10, bold:true, color:{argb:'FFFFFFFF'}},
+  appendixFont:{name:'Calibri', size:11, bold:true, color:{argb:'FF000000'}},
+  sectionFont: {name:'Calibri', size:10, bold:true, color:{argb:'FF000000'}},
+  numFont:     {name:'Calibri', size:9,  bold:true, color:{argb:'FF0D2240'}},
+  catFont:     {name:'Calibri', size:9,  bold:false, color:{argb:'FF555555'}},
+  subFont:     {name:'Calibri', size:9,  bold:true, color:{argb:'FF555555'}},
+  itemFont:    {name:'Calibri', size:11, bold:false, color:{argb:'FF000000'}},
+  locFont:     {name:'Calibri', size:9,  bold:true, color:{argb:'FF1E8449'}}
+};
+
+function styleCellGen(cell, font, fill, align){
+  cell.font = font; cell.border = S_gen.thin;
+  if(fill) cell.fill = fill;
+  cell.alignment = align || {vertical:'center'};
+}
+function styleDataRowGen(ws, row){
+  styleCellGen(ws.getCell(`D${row}`), S_gen.itemFont, S_gen.rowFill, {vertical:'center', wrapText:true});
+  styleCellGen(ws.getCell(`E${row}`), S_gen.locFont, S_gen.rowFill, {horizontal:'center', vertical:'center'});
+  ['F','G','H','I','J','K'].forEach(c=>styleCellGen(ws.getCell(`${c}${row}`), S_gen.itemFont, S_gen.rowFill));
+}
+function styleGroupNumGen(ws, startRow){
+  styleCellGen(ws.getCell(`A${startRow}`), S_gen.numFont, S_gen.rowFill, {horizontal:'center', vertical:'center'});
+  styleCellGen(ws.getCell(`B${startRow}`), S_gen.catFont, S_gen.rowFill, {vertical:'center', wrapText:true});
+  styleCellGen(ws.getCell(`C${startRow}`), S_gen.subFont, S_gen.rowFill, {vertical:'center', wrapText:true});
+}
+
+function writeTitleBlockGen(ws, siteId, siteName, siteDate, sitePE){
+  ws.mergeCells('A1:K1');
+  const title = ws.getCell('A1');
+  title.value = 'PTA HOP Checklist';
+  styleCellGen(title, S_gen.titleFont, S_gen.navyFill, {horizontal:'center', vertical:'center'});
+  ws.getRow(1).height = 26;
+  ws.mergeCells('A2:K2');
+  const info = ws.getCell('A2');
+  info.value = `SITE ID: ${siteId||'____________'}     SITE NAME: ${siteName||'____________'}     DATE: ${siteDate||'____________'}     PE: ${sitePE||'____________'}`;
+  styleCellGen(info, S_gen.siteFont, {type:'pattern', pattern:'solid', fgColor:{argb:'FFF4F6F8'}}, {horizontal:'left', vertical:'center'});
+  ws.getRow(2).height = 18;
+  const headers = ['#','Category','Sub-Section','Checklist Item','Location','Status','Date','Field Team','Module','Serial Number','Remarks'];
+  headers.forEach((h,i)=>{ ws.getCell(4, i+1).value = h; });
+  for(let c=1;c<=11;c++) styleCellGen(ws.getCell(4,c), S_gen.headerFont, S_gen.navyFill, {horizontal:'center', vertical:'center', wrapText:true});
+  ws.getRow(4).height = 26;
+}
+
+function writeRawRowsGen(ws, row, rows){
+  rows.forEach(r=>{
+    ws.getCell(`B${row}`).value = r.cat||'';
+    ws.getCell(`C${row}`).value = r.sub||'';
+    ws.getCell(`D${row}`).value = r.item||'';
+    ws.getCell(`E${row}`).value = r.loc||'';
+    styleDataRowGen(ws, row);
+    row++;
+  });
+  return row;
+}
+
+function writeGroupGen(ws, startRow, num, name, id, items, locs){
+  const count = items.length;
+  const endRow = startRow + count - 1;
+  if(count > 1){
+    ws.mergeCells(`A${startRow}:A${endRow}`);
+    ws.mergeCells(`B${startRow}:B${endRow}`);
+    ws.mergeCells(`C${startRow}:C${endRow}`);
+  }
+  ws.getCell(`A${startRow}`).value = num;
+  ws.getCell(`B${startRow}`).value = name;
+  ws.getCell(`C${startRow}`).value = id;
+  for(let i=0;i<count;i++){
+    const r = startRow+i;
+    ws.getCell(`D${r}`).value = items[i];
+    ws.getCell(`E${r}`).value = Array.isArray(locs) ? locs[i] : locs;
+    styleDataRowGen(ws, r);
+  }
+  styleGroupNumGen(ws, startRow);
+  return endRow+1;
+}
+
+function genSectionContent(ws, row, scope, apId, sec){
+  const cfg = genVarCfgs.find(v=>v.appendix===apId && v.section===sec.id);
+  if(!cfg){
+    // Fixed section
+    if(sec.rows && sec.rows.length) return writeRawRowsGen(ws, row, sec.rows);
+    if(sec.kind==='block' && sec.templates && sec.templates[0]){
+      const items = sec.templates[0].items;
+      items.forEach((item,i)=>{
+        ws.getCell(`D${row}`).value = item;
+        styleDataRowGen(ws, row);
+        row++;
+      });
+      return row;
+    }
+    if(sec.kind==='flat-list-generic'){
+      ws.getCell(`D${row}`).value = sec.item_text||'';
+      ws.getCell(`E${row}`).value = sec.location||'';
+      styleDataRowGen(ws, row);
+      return row+1;
+    }
+    if(sec.kind==='appendix_direct' && sec.rows){
+      return writeRawRowsGen(ws, row, sec.rows);
+    }
+    // Fallback: single row
+    ws.getCell(`D${row}`).value = sec.name;
+    styleDataRowGen(ws, row);
+    return row+1;
+  }
+
+  const key = cfg.key;
+  const critKey = key + '||criteria';
+
+  if(cfg.kind==='equipList'){
+    const instances = genUserState[key] || [];
+    const overrideItems = genCriteriaOverrides[critKey];
+    items = overrideItems && overrideItems.length ? overrideItems : (sec.item_text ? [sec.item_text] : ['Item']);
+    instances.forEach((inst,i)=>{ row = writeGroupGen(ws, row, i+1, inst.name, inst.id, items, items.map(()=>sec.location||'Internal')); });
+    return row;
+  }
+
+  if(cfg.kind==='equipListMultiType'){
+    const state = genUserState[key] || {};
+    const overrideMap = genCriteriaOverrides[critKey] || {};
+    cfg.subtypes.forEach(st=>{
+      const list = state[st.key] || [];
+      const items2 = (overrideMap[st.key] || st.items);
+      list.forEach((inst,i)=>{ row = writeGroupGen(ws, row, i+1, inst.name, inst.id, items2, st.location); });
+    });
+    return row;
+  }
+
+  if(cfg.kind==='connList'){
+    const conns = genUserState[key] || [];
+    const overrideItems = genCriteriaOverrides[critKey];
+    const itemFns = cfg.items || [];
+    conns.forEach((c,i)=>{
+      let items2;
+      if(overrideItems && overrideItems.length){
+        items2 = overrideItems.map(t=>t.replace(/\{A\}/g,c.a).replace(/\{B\}/g,c.b));
+      } else {
+        items2 = itemFns.map(fn=>fn(c.a,c.b));
+      }
+      row = writeGroupGen(ws, row, i+1, c.connId, `${c.a} - ${c.b}`, items2, cfg.location);
+    });
+    return row;
+  }
+
+  if(cfg.kind==='reuseConn'){
+    const srcCfg = genVarCfgs.find(v=>v.key===cfg.reuses);
+    const conns = genUserState[srcCfg?srcCfg.key:''] || [];
+    conns.forEach((c,i)=>{ row = writeGroupGen(ws, row, i+1, c.connId, `${c.a} - ${c.b}`, [cfg.item], cfg.location); });
+    return row;
+  }
+
+  return row;
+}
+
+function finalizeWorkbookGen(wb, ws, dash, lastRow, appendixTrack, sectionTrack, scopeName){
+  const SHEET = scopeName || 'Checklist';
+  // Status dropdown
+  for(let r=5; r<=lastRow; r++){
+    ws.getCell(`F${r}`).dataValidation = {
+      type:'list', allowBlank:true,
+      formulae:['"Approved,Rejected,Pending,NA,Approved by GDC,Rejected by GDC,Approved by PTA,Rejected by PTA"']
+    };
+  }
+  ws.addConditionalFormatting({
+    ref:`F5:F${lastRow}`,
+    rules:[
+      {type:'containsText', operator:'containsText', text:'Approved', priority:1,
+        style:{fill:{type:'pattern', pattern:'solid', bgColor:{argb:'FFC6EFCE'}}}},
+      {type:'containsText', operator:'containsText', text:'Rejected', priority:2,
+        style:{fill:{type:'pattern', pattern:'solid', bgColor:{argb:'FFFFC7CE'}}}},
+      {type:'containsText', operator:'containsText', text:'Pending', priority:3,
+        style:{fill:{type:'pattern', pattern:'solid', bgColor:{argb:'FFFFEB9C'}}}}
+    ]
+  });
+  // Filter helper columns
+  const filterHdr = {name:'Calibri', size:9, bold:true, color:{argb:'FF7F6000'}};
+  const filterFill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF2CC'}};
+  ['M','N'].forEach((col,i)=>{
+    const c = ws.getCell(`${col}4`);
+    c.value = i===0 ? 'Appendix (filter by this)' : 'Section (filter by this)';
+    styleCellGen(c, filterHdr, filterFill, {horizontal:'center', vertical:'center', wrapText:true});
+  });
+  const apBoundaries = appendixTrack.map((a,i)=>({
+    label:a.label, start:a.row+1, end:(i+1<appendixTrack.length)?appendixTrack[i+1].row:lastRow+1
+  }));
+  const secBoundaries = sectionTrack.map((s,i)=>{
+    const nextSec = sectionTrack[i+1] ? sectionTrack[i+1].row : Infinity;
+    const nextAp = apBoundaries.find(a=>a.start > s.row) ? apBoundaries.find(a=>a.start > s.row).start - 1 : lastRow;
+    const end = Math.min(nextSec, nextAp+1, lastRow+1);
+    return {label:s.label, appendix:s.appendix, start:s.row+1, end};
+  });
+  apBoundaries.forEach(ap=>{
+    for(let r=ap.start; r<ap.end; r++){
+      ws.getCell(`M${r}`).value = ap.label;
+      ws.getCell(`M${r}`).font = {name:'Calibri', size:9, color:{argb:'FF7F7F7F'}};
+    }
+  });
+  secBoundaries.forEach(sec=>{
+    for(let r=sec.start; r<sec.end; r++){
+      ws.getCell(`N${r}`).value = sec.label;
+      ws.getCell(`N${r}`).font = {name:'Calibri', size:9, color:{argb:'FF7F7F7F'}};
+    }
+  });
+  ws.autoFilter = {from:'A4', to:`N${lastRow}`};
+  for(let r=5; r<=lastRow; r++) ws.getRow(r).outlineLevel = 1;
+  appendixTrack.forEach(a=>{ ws.getRow(a.row).outlineLevel = 0; });
+  sectionTrack.forEach(s=>{ ws.getRow(s.row).outlineLevel = 1; });
+  ws.properties.outlineLevelRow = 1;
+  appendixTrack.forEach(a=>{
+    const back = ws.getCell(`P${a.row}`);
+    back.value = {formula:'HYPERLINK("#Dashboard!A1","Back to Dashboard")', result:'\u2934 Back to Dashboard'};
+    back.font = {name:'Calibri', size:9, color:{argb:'FF0563C1'}, underline:true, italic:true};
+  });
+
+  // Dashboard
+  dash.columns = [{width:42},{width:11},{width:11},{width:11},{width:11},{width:13},{width:13},{width:16}];
+  dash.views = [{showGridLines:false}];
+  const navy='FF1F3864', blue='FF2E5395', lightblue='FFD9E2F3', grey='FFF2F2F2';
+  const wf = {name:'Calibri', color:{argb:'FFFFFFFF'}, bold:true, size:11};
+  const tf = {name:'Calibri', color:{argb:navy}, bold:true, size:16};
+  const sf = {name:'Calibri', color:{argb:'FFFFFFFF'}, bold:true, size:12};
+  const bf = {name:'Calibri', bold:true, size:10};
+  const nf = {name:'Calibri', size:10};
+  const thinBorder = {top:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
+  const fillC = c => ({type:'pattern', pattern:'solid', fgColor:{argb:c}});
+  dash.getCell('A1').value = 'HOP Checklist \u2013 Progress Dashboard';
+  dash.getCell('A1').font = tf;
+  dash.getCell('A2').value = `Live summary from "${SHEET}" sheet.`;
+  dash.getCell('A2').font = {name:'Calibri', italic:true, size:9, color:{argb:'FF777777'}};
+  const AP = `'${SHEET}'!`;
+  function rng(col,start,end){ return `${AP}${col}${start}:${col}${end-1}`; }
+  function counts(start,end){
+    const d = rng('D',start,end), f = rng('F',start,end);
+    return {
+      total: `COUNTIF(${d},"<>")`,
+      approved: `COUNTIFS(${d},"<>",${f},"Approved")+COUNTIFS(${d},"<>",${f},"Approved by GDC")+COUNTIFS(${d},"<>",${f},"Approved by PTA")+COUNTIFS(${d},"<>",${f},"NA")`,
+      rejected: `COUNTIFS(${d},"<>",${f},"Rejected")+COUNTIFS(${d},"<>",${f},"Rejected by GDC")+COUNTIFS(${d},"<>",${f},"Rejected by PTA")`,
+      pending: `COUNTIFS(${d},"<>",${f},"Pending")`,
+      notstarted: `COUNTIFS(${d},"<>",${f},"")`
+    };
+  }
+  let drow = 4;
+  dash.getCell(`A${drow}`).value = 'Overall Progress'; dash.getCell(`A${drow}`).font = sf;
+  for(let c=1;c<=7;c++) dash.getCell(drow,c).fill = fillC(navy);
+  drow++;
+  ['Total Items','Approved / N-A','Rejected','Pending','Not Started','% Actioned','% Approved'].forEach((h,i)=>{
+    const cell = dash.getCell(drow,i+1);
+    cell.value = h; cell.font = wf; cell.fill = fillC(blue);
+    cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true}; cell.border = thinBorder;
+  });
+  const dr = drow+1;
+  const oc = counts(5, lastRow+1);
+  dash.getCell(`A${dr}`).value = {formula:oc.total, result:0};
+  dash.getCell(`B${dr}`).value = {formula:oc.approved, result:0};
+  dash.getCell(`C${dr}`).value = {formula:oc.rejected, result:0};
+  dash.getCell(`D${dr}`).value = {formula:oc.pending, result:0};
+  dash.getCell(`E${dr}`).value = {formula:oc.notstarted, result:0};
+  dash.getCell(`F${dr}`).value = {formula:`(B${dr}+C${dr})/A${dr}`, result:0};
+  dash.getCell(`G${dr}`).value = {formula:`B${dr}/A${dr}`, result:0};
+  for(let c=1;c<=7;c++){
+    const cell = dash.getCell(dr,c);
+    cell.border = thinBorder; cell.font = {name:'Calibri', bold:true, size:13};
+    cell.alignment = {horizontal:'center'}; cell.fill = fillC(lightblue);
+    if(c>=6) cell.numFmt = '0.0%';
+  }
+  drow = dr+2;
+  dash.getCell(`A${drow}`).value = 'Progress by Appendix'; dash.getCell(`A${drow}`).font = sf;
+  for(let c=1;c<=8;c++) dash.getCell(drow,c).fill = fillC(navy);
+  drow++;
+  const colH = ['Appendix','Items','Approved / N-A','Rejected','Pending','Not Started','% Actioned'];
+  colH.forEach((h,i)=>{
+    const cell = dash.getCell(drow,i+1);
+    cell.value = h; cell.font = wf; cell.fill = fillC(blue);
+    cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true}; cell.border = thinBorder;
+  });
+  drow++;
+  appendixTrack.forEach((a,i)=>{
+    const end = (i+1<appendixTrack.length) ? appendixTrack[i+1].row : lastRow+1;
+    const cc = counts(a.row+1, end);
+    dash.getCell(`A${drow}`).value = a.label;
+    dash.getCell(`B${drow}`).value = {formula:cc.total, result:0};
+    dash.getCell(`C${drow}`).value = {formula:cc.approved, result:0};
+    dash.getCell(`D${drow}`).value = {formula:cc.rejected, result:0};
+    dash.getCell(`E${drow}`).value = {formula:cc.pending, result:0};
+    dash.getCell(`F${drow}`).value = {formula:cc.notstarted, result:0};
+    dash.getCell(`G${drow}`).value = {formula:`IF(B${drow}=0,0,(C${drow}+D${drow})/B${drow})`, result:0};
+    dash.getCell(`H${drow}`).value = {formula:`HYPERLINK("#'${SHEET}'!A${a.row}","Go to section")`, result:'Go \u2192'};
+    for(let c=1;c<=8;c++){
+      const cell = dash.getCell(drow,c);
+      cell.border = thinBorder; cell.font = nf;
+      if(c>1) cell.alignment = {horizontal:'center'};
+    }
+    dash.getCell(`A${drow}`).font = bf;
+    dash.getCell(`G${drow}`).numFmt = '0%';
+    dash.getCell(`H${drow}`).font = {name:'Calibri', color:{argb:'FF0563C1'}, underline:true, size:10};
+    if(drow%2===0) for(let c=1;c<=7;c++) dash.getCell(drow,c).fill = fillC(grey);
+    drow++;
+  });
+  const appendixTableEnd = drow-1;
+  drow++;
+  dash.getCell(`A${drow}`).value = 'Progress by Section (drill-down)'; dash.getCell(`A${drow}`).font = sf;
+  for(let c=1;c<=8;c++) dash.getCell(drow,c).fill = fillC(navy);
+  drow++;
+  colH.forEach((h,i)=>{
+    const cell = dash.getCell(drow,i+1);
+    cell.value = h.replace('Appendix','Section'); cell.font = wf; cell.fill = fillC(blue);
+    cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true}; cell.border = thinBorder;
+  });
+  drow++;
+  let curAp = null;
+  secBoundaries.forEach(sec=>{
+    if(sec.appendix !== curAp){
+      curAp = sec.appendix;
+      dash.getCell(`A${drow}`).value = curAp;
+      dash.getCell(`A${drow}`).font = {name:'Calibri', bold:true, size:10, color:{argb:navy}};
+      for(let c=1;c<=7;c++){ dash.getCell(drow,c).fill = fillC(lightblue); dash.getCell(drow,c).border = thinBorder; }
+      drow++;
+    }
+    const cc = counts(sec.start, sec.end);
+    dash.getCell(`A${drow}`).value = '    ' + sec.label;
+    dash.getCell(`B${drow}`).value = {formula:cc.total, result:0};
+    dash.getCell(`C${drow}`).value = {formula:cc.approved, result:0};
+    dash.getCell(`D${drow}`).value = {formula:cc.rejected, result:0};
+    dash.getCell(`E${drow}`).value = {formula:cc.pending, result:0};
+    dash.getCell(`F${drow}`).value = {formula:cc.notstarted, result:0};
+    dash.getCell(`G${drow}`).value = {formula:`IF(B${drow}=0,0,(C${drow}+D${drow})/B${drow})`, result:0};
+    dash.getCell(`H${drow}`).value = {formula:`HYPERLINK("#'${SHEET}'!A${sec.start-1}","Go")`, result:'Go \u2192'};
+    for(let c=1;c<=8;c++){
+      const cell = dash.getCell(drow,c);
+      cell.border = thinBorder; cell.font = {name:'Calibri', size:9};
+      if(c>1) cell.alignment = {horizontal:'center'};
+    }
+    dash.getCell(`G${drow}`).numFmt = '0%';
+    dash.getCell(`H${drow}`).font = {name:'Calibri', color:{argb:'FF0563C1'}, underline:true, size:9};
+    dash.getRow(drow).outlineLevel = 1;
+    drow++;
+  });
+  dash.properties.outlineLevelRow = 1;
+  const ruleRange1 = `G${appendixTableEnd-appendixTrack.length+1}:G${appendixTableEnd}`;
+  dash.addConditionalFormatting({
+    ref: ruleRange1,
+    rules: [{type:'dataBar', cfvo:[{type:'num',val:0},{type:'num',val:1}], color:{argb:'FF63BE7B'}}]
+  });
+  const secTableStart = appendixTableEnd + 4;
+  dash.addConditionalFormatting({
+    ref: `G${secTableStart}:G${drow-1}`,
+    rules: [{type:'dataBar', cfvo:[{type:'num',val:0},{type:'num',val:1}], color:{argb:'FF63BE7B'}}]
+  });
+}
+
+function generateWorkbook(scope, siteId, siteName, siteDate, sitePE){
+  const wb = new ExcelJS.Workbook();
+  const sheetName = scope.name.replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'Checklist';
+  const dash = wb.addWorksheet('Dashboard', {views:[{state:'frozen', ySplit:4}]});
+  const ws = wb.addWorksheet(sheetName, {views:[{state:'frozen', ySplit:4}]});
+  ws.columns = [{width:5},{width:32},{width:26},{width:60},{width:10},{width:10},{width:12},{width:14},{width:10},{width:16},{width:20},{},{width:30},{width:30}];
+  writeTitleBlockGen(ws, siteId, siteName, siteDate, sitePE);
+  let row = 5;
+  const appendixTrack = [];
+  const sectionTrack = [];
+  scope.appendices.forEach(ap=>{
+    writeAppendixHeaderGen(ws, row, ap.name);
+    appendixTrack.push({row, label:ap.name});
+    row++;
+    ap.sections.forEach(sec=>{
+      writeSectionHeaderGen(ws, row, sec.name);
+      sectionTrack.push({row, label:sec.name, appendix:ap.name});
+      row++;
+      row = genSectionContent(ws, row, scope, ap.id, sec);
+    });
+  });
+  const lastRow = row - 1;
+  finalizeWorkbookGen(wb, ws, dash, lastRow, appendixTrack, sectionTrack, sheetName);
+  return wb;
+}
+
+function writeAppendixHeaderGen(ws, row, label){
+  ws.mergeCells(`A${row}:K${row}`);
+  const cell = ws.getCell(`A${row}`);
+  cell.value = label;
+  styleCellGen(cell, S_gen.appendixFont, S_gen.appendixFill, {horizontal:'left', vertical:'center'});
+  ws.getRow(row).height = 20;
+}
+function writeSectionHeaderGen(ws, row, label){
+  ws.mergeCells(`A${row}:K${row}`);
+  const cell = ws.getCell(`A${row}`);
+  cell.value = '    \u25b6  ' + label;
+  styleCellGen(cell, S_gen.sectionFont, S_gen.sectionFill, {horizontal:'left', vertical:'center'});
+}
+
+// ============================================================
+// GENERATE BUTTON
+// ============================================================
+document.getElementById('genBtn').onclick = async ()=>{
+  const scopeId = document.getElementById('genScopeSelect').value;
+  const scope = getScope(scopeId);
+  if(!scope){ alert('Select a scope template first.'); return; }
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = 'Generating\u2026';
+  try{
+    const siteId = document.getElementById('genSiteId').value;
+    const siteName = document.getElementById('genSiteName').value;
+    const siteDate = document.getElementById('genSiteDate').value;
+    const sitePE = document.getElementById('genSitePE').value;
+    const wb = generateWorkbook(scope, siteId, siteName, siteDate, sitePE);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${scope.name.replace(/[^a-zA-Z0-9]/g,'_')}_${siteId||'site'}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(err){
+    alert('Error: ' + err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Generate & Download';
+  }
+};
+
+// Cable schedule parse button
+document.getElementById('genParseBtn').onclick = async ()=>{
+  const scopeId = document.getElementById('genScopeSelect').value;
+  const scope = getScope(scopeId);
+  if(!scope){ alert('Select a scope template first.'); return; }
+  const fileInput = document.getElementById('genScheduleFile');
+  const f = fileInput.files && fileInput.files[0];
+  const status = document.getElementById('genParseStatus');
+  if(!f){ status.textContent = 'Choose a cable schedule .xlsx first.'; return; }
+  if(typeof XLSX === 'undefined'){ status.textContent = 'SheetJS failed to load.'; return; }
+  const btn = document.getElementById('genParseBtn');
+  btn.disabled = true; status.textContent = 'Parsing ' + f.name + ' \u2026';
+  try{
+    buildGenUI(scopeId);
+    const sum = await parseCableScheduleGen(f, scope);
+    // Re-render variable cards to show populated data
+    genVarCfgs.forEach(cfg=>{
+      if(cfg.kind==='reuseConn') return;
+      const oldEl = document.querySelector(`.var-card[data-key="${cfg.key}"]`);
+      if(!oldEl) return;
+      let newCard;
+      if(cfg.kind==='equipList') newCard = renderGenEquipList(cfg, genCurrentScope);
+      else if(cfg.kind==='connList') newCard = renderGenConnList(cfg);
+      else if(cfg.kind==='equipListMultiType') newCard = renderGenMultiType(cfg);
+      if(newCard) oldEl.replaceWith(newCard);
+    });
+    updateGenStats(genCurrentScope);
+    const parts = Object.entries(sum.byPrefix).map(([p,c])=>`${p}: ${c}`);
+    status.textContent = `Imported \u2713 \u2014 ${parts.join(', ')} (${sum.total} total).`;
+  } catch(err){
+    status.textContent = 'Error: ' + err.message;
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick = function(){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
+    document.getElementById('tab-'+this.dataset.tab).style.display='';
+    if(this.dataset.tab==='generator') updateGeneratorScopeSelect();
+  };
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadAppData();
+// Migration: ensure cablePrefixes exists on variable sections
+appData.scopes.forEach(s=>{
+  s.appendices.forEach(ap=>{
+    ap.sections.forEach(sec=>{
+      if((sec.kind==='connList'||sec.kind==='equipList') && !Array.isArray(sec.cablePrefixes)){
+        sec.cablePrefixes = [];
+      }
+    });
+  });
+});
+if(appData.scopes.length) saveAppData();
+// Auto-seed IBC template on first load
+if(appData.scopes.length === 0 && typeof IBC_SEED_TEMPLATE !== 'undefined'){
+  appData.scopes.push(IBC_SEED_TEMPLATE);
+  saveAppData();
+  console.log('Auto-seeded IBC Site template.');
+}
+renderScopeList();
+if(appData.scopes.length) selectedScopeId = appData.scopes[0].id;
+renderDesigner();
+updateGeneratorScopeSelect();
+</script>
+</body>
+</html>
