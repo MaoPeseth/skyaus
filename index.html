@@ -1803,7 +1803,14 @@ document.querySelectorAll('.tab').forEach(tab=>{
     this.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
     document.getElementById('tab-'+this.dataset.tab).style.display='';
-    if(this.dataset.tab==='generator') updateGeneratorScopeSelect();
+    if(this.dataset.tab==='generator'){
+      updateGeneratorScopeSelect();
+      const scopeId = document.getElementById('genScopeSelect').value;
+      if(scopeId){
+        buildGenUI(scopeId);
+        restoreSavedState();
+      }
+    }
   };
 });
 
@@ -1832,8 +1839,7 @@ renderScopeList();
 if(appData.scopes.length) selectedScopeId = appData.scopes[0].id;
 renderDesigner();
 updateGeneratorScopeSelect();
-// Restore saved genUserState from localStorage
-(function restoreGenUserState(){
+function restoreSavedState(){
   const scopeId = document.getElementById('genScopeSelect').value;
   if(!scopeId) return;
   const saved = localStorage.getItem(GEN_STATE_KEY);
@@ -1861,7 +1867,8 @@ updateGeneratorScopeSelect();
       updateGenStats(genCurrentScope);
     }
   }catch(e){}
-})();
+}
+restoreSavedState();
 // Restore & save site info fields
 ['genSiteId','genSiteName','genSiteDate','genSitePE'].forEach(id=>{
   const el = document.getElementById(id);
